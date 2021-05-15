@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
 
 import com.sourcecode.iplleaderboard.model.Team;
 
@@ -28,6 +29,7 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
   }
 
   @Override
+  @Transactional
   public void afterJob(JobExecution jobExecution) {
     if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
       log.info("!!! JOB FINISHED! Time to verify the results");
@@ -43,6 +45,16 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
             Team team = teamData.get((String) e[0]);
             team.setTotalMatches(team.getTotalMatches() + (long) e[1]);
           });
+
+      entityManager.createQuery("select m.matchWinner, count(*) from Match m group by m.matchWinner", Object[].class)
+          .getResultList().stream().forEach(e -> {
+            Team team = teamData.get((String) e[0]);
+            if (team != null)
+              team.setTotalWins((long) e[1]);
+          });
+
+      teamData.values().forEach(team -> entityManager.persist(team));
+      teamData.values().forEach(team -> System.out.println(team));
 
     }
   }
