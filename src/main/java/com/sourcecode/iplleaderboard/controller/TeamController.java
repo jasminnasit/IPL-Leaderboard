@@ -1,6 +1,7 @@
 package com.sourcecode.iplleaderboard.controller;
 
 import com.sourcecode.iplleaderboard.model.Team;
+import com.sourcecode.iplleaderboard.repository.MatchRepository;
 import com.sourcecode.iplleaderboard.repository.TeamRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,12 +15,18 @@ public class TeamController {
     @Autowired
     private TeamRepository teamRepository;
 
-    public TeamController(TeamRepository teamRepository) {
+    @Autowired
+    private MatchRepository matchRepository;
+
+    public TeamController(TeamRepository teamRepository, MatchRepository matchRepository) {
         this.teamRepository = teamRepository;
+        this.matchRepository = matchRepository;
     }
 
     @GetMapping("/team/{teamName}")
     public Team getTeam(@PathVariable String teamName) {
-        return teamRepository.findByTeamName(teamName);
+        Team team = teamRepository.findByTeamName(teamName);
+        team.setMatches(matchRepository.findLatestMatchesByTeam(teamName, 4));
+        return team;
     }
 }
